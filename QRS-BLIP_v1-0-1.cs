@@ -1,6 +1,6 @@
 /*
-QRS-BLIP v1.0.0
-BASED ON QRS-Main v2.1.3
+QRS-BLIP v1.0.1
+BASED ON QRS-Main v2.1.4
 CREATED AND BUG-TESTED BY THIRTY-TWO
 */
 
@@ -174,7 +174,7 @@ private IMyTextPanel _scriptPanel;
 private IMyProjector _pitProjector;
 private string setupErrorMessage = "";
 private int numSetupErrors = 0;
-private string QRSVersion = "1.0.0";
+private string QRSVersion = "1.0.1";
 
 // Mode Control
 private Dictionary<string, FeatureModeControl> _AllModes = new Dictionary<string, FeatureModeControl>();
@@ -522,23 +522,17 @@ private void SetupControlSeat()
     var list = new List<IMyShipController>();
 
     GridTerminalSystem.GetBlocksOfType<IMyShipController>(list, c => c.CubeGrid == Me.CubeGrid);
+	
+	var control = list.FirstOrDefault(c => c is IMyRemoteControl) ?? list.FirstOrDefault(c => c is IMyCockpit);
 
-    for (int i = 0; i < list.Count; i++)
-    {
-        if (list[i].BlockDefinition.ToString() == "MyObjectBuilder_Cockpit/PassengerSeatSmallOffset" || list[i].BlockDefinition.ToString() == "MyObjectBuilder_Cockpit/PassengerSeatSmallNew")
-        {
-            list.Remove(list[i]);
-        }
-    }
-
-    if (list.Count == 0)
+    if (control == null)
     {
         setupErrorMessage += "No valid IMyShipController Component found on craft.\n\n";
         numSetupErrors++;
     }
     if (setupErrorMessage != "") { return; }
 
-    _mainController = (IMyShipController)list[0];
+    _mainController = (IMyShipController)control;
 }
 
 private bool DetermineErrorArrayLengths(int errorMessageNumber, string errorAppendix, string modeAppendix, float comparisonLength, params float[] otherArrayLengths)
@@ -1216,7 +1210,7 @@ private void HandleExhaustPipeController()
 // Function used for debugging
 private void HandleEchoState()
 {
-    displayMessage = "Running QRS-BLIP v" + QRSVersion + "\nBased on QRS-Main v2.1.3\nCreated and bug-tested by Thirty-Two\n\n";
+    displayMessage = "Running QRS-BLIP v" + QRSVersion + "\nBased on QRS-Main v2.1.4\nCreated and bug-tested by Thirty-Two\n\n";
 
     string echoState;
     foreach (var item in _AllModes)
