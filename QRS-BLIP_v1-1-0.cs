@@ -1,5 +1,5 @@
 /*
-QRS-BLIP v1.0.1
+QRS-BLIP v1.1.0
 BASED ON QRS-Main v2.1.4
 CREATED AND BUG-TESTED BY THIRTY-TWO
 */
@@ -18,6 +18,7 @@ private bool doPitModeManeuver = true;
 private bool doExhaustPipeController = false;
 
 // Mode Control
+private int defaultSteeringMode = 0;
 private int defaultSuspensionMode = 0;
 private int defaultStrengthMode = 0;
 private int defaultAutoERSMode = 0;
@@ -25,32 +26,46 @@ private int defaultScriptScreen = 0;
 private int suspensionPitMode = 1;
 
 // Active Steering
-private float[] frontWheelSpeeds = {
-    25f, 70f, 80f, 95f, 100f
+private float[][] frontWheelSpeeds = {
+    new float[] {25f, 70f, 80f, 95f, 100f},
+	new float[] {25f, 70f, 80f, 95f, 100f}
 };
-private float[] frontWheelFrictions = {
-    30f,
-    60f,
-    100f
+private float[][] frontWheelFrictions = {
+	new float[] {30f, 60f, 100f},
+	new float[] {30f, 60f, 100f}
 };
-private float[][] frontWheelAngles = {
-    new float[] {42f, 40f, 40f, 33f, 32f},
-    new float[] {44f, 42f, 40f, 35f, 33f},
-    new float[] {44f, 43f, 41f, 35f, 33f}
+private float[][][] frontWheelAngles = {
+	new float[][] {
+		new float[] {42f, 40f, 40f, 33f, 32f},
+		new float[] {44f, 42f, 40f, 35f, 33f},
+		new float[] {44f, 43f, 41f, 35f, 33f}
+	},
+	new float[][] {
+		new float[] {42f, 40f, 40f, 33f, 32f},
+		new float[] {44f, 42f, 40f, 35f, 33f},
+		new float[] {44f, 43f, 41f, 35f, 33f}
+	}
 };
 
-private float[] rearWheelSpeeds = {
-    25f, 70f, 100f
+private float[][] rearWheelSpeeds = {
+    new float[] {25f, 70f, 100f},
+	new float[] {25f, 70f, 100f}
 };
-private float[] rearWheelFrictions = {
-    30f,
-    60f,
-    100f
+private float[][] rearWheelFrictions = {
+	new float[] {30f, 60f, 100f},
+	new float[] {30f, 60f, 100f}
 };
-private float[][] rearWheelAngles = {
-    new float[] {15f, 2f, 0f},
-    new float[] {18f, 3f, 0f},
-    new float[] {20f, 3.5f, 1f}
+private float[][][] rearWheelAngles = {
+	new float[][] {
+		new float[] {15f, 2f, 0f},
+		new float[] {18f, 3f, 0f},
+		new float[] {20f, 3.5f, 1f}
+	},
+	new float[][] {
+		new float[] {15f, 2f, 0f},
+		new float[] {18f, 3f, 0f},
+		new float[] {20f, 3.5f, 1f}
+	}
 };
 
 // Active Suspension
@@ -174,7 +189,7 @@ private IMyTextPanel _scriptPanel;
 private IMyProjector _pitProjector;
 private string setupErrorMessage = "";
 private int numSetupErrors = 0;
-private string QRSVersion = "1.0.1";
+private string QRSVersion = "1.1.0";
 
 // Mode Control
 private Dictionary<string, FeatureModeControl> _AllModes = new Dictionary<string, FeatureModeControl>();
@@ -308,6 +323,7 @@ private void SetupCurrentStates()
 
 private void SetupDefaultModes()
 {
+	_AllModes["STEER"].SetDefaultModes(defaultSteeringMode, frontWheelSpeeds.Length - 1, defaultSteeringMode);
     _AllModes["SUS"].SetDefaultModes(defaultSuspensionMode, neutralHeights.Length - 1, defaultSuspensionMode);
     _AllModes["STRENGTH"].SetDefaultModes(defaultStrengthMode, neutralStrengths.Length - 1, defaultStrengthMode);
     _AllModes["AUTOERS"].SetDefaultModes(defaultAutoERSMode, dutyCycles.Length - 1, defaultAutoERSMode);
@@ -574,15 +590,23 @@ private void IsCorrectSteeringArrayLengths(string errorAppendix, int comparisonL
 }
 
 private void CheckSteeringArrayLengths() {
-    IsCorrectSteeringArrayLengths("Front Wheel Angles & Frictions", frontWheelFrictions.Length, frontWheelAngles.Length);
-    for (int i = 0; i < frontWheelFrictions.Length; i++) {
-        IsCorrectSteeringArrayLengths($"Front Wheel Angles & Speeds for Friction {frontWheelFrictions[i]}", frontWheelSpeeds.Length, frontWheelAngles[i].Length);
-    }
-
-    IsCorrectSteeringArrayLengths("Rear Wheel Angles & Frictions", rearWheelFrictions.Length, rearWheelAngles.Length);
-    for (int i = 0; i < rearWheelFrictions.Length; i++) {
-        IsCorrectSteeringArrayLengths($"Rear Wheel Angles & Speeds for Friction {rearWheelFrictions[i]}", rearWheelSpeeds.Length, rearWheelAngles[i].Length);
-    }
+	IsCorrectSteeringArrayLengths("the Active Steering Modes", frontWheelSpeeds.Length, frontWheelAngles.Length, frontWheelFrictions.Length, rearWheelSpeeds.Length, rearWheelAngles.Length, rearWheelFrictions.Length);
+	
+	if (setupErrorMessage != "") { return; }
+	
+	for (int i = 0; i < frontWheelSpeeds.Length; i++) {
+		IsCorrectSteeringArrayLengths($"Front Wheel Angles & Frictions for STEER {i}", frontWheelFrictions[i].Length, frontWheelAngles[i].Length);
+		for (int j = 0; j < frontWheelFrictions[i].Length; j++) {
+			IsCorrectSteeringArrayLengths($"Front Wheel Angles & Speeds for Friction {frontWheelFrictions[i][j]} for STEER {i}", frontWheelSpeeds[i].Length, frontWheelAngles[i][j].Length);
+		}
+	}
+	
+	for (int i = 0; i < frontWheelSpeeds.Length; i++) {
+		IsCorrectSteeringArrayLengths($"Rear Wheel Angles & Frictions for STEER {i}", rearWheelFrictions[i].Length, rearWheelAngles[i].Length);
+		for (int j = 0; j < rearWheelFrictions.Length; j++) {
+			IsCorrectSteeringArrayLengths($"Rear Wheel Angles & Speeds for Friction {rearWheelFrictions[i][j]} for STEER {i}", rearWheelSpeeds[i].Length, rearWheelAngles[i][j].Length);
+		}
+	}
 }
 
 private void CheckSuspensionArrayLengths()
@@ -842,8 +866,10 @@ private void HandleActiveSteering()
 {
     if (!_AllModes["STEER"].FeatureState) { return; }
 	
-	calculatedFrontAngle = RangedInterpolation3D(carSpeed, averageFriction, frontWheelSpeeds, frontWheelAngles, frontWheelFrictions);
-	calculatedRearAngle = RangedInterpolation3D(carSpeed, averageFriction, rearWheelSpeeds, rearWheelAngles, rearWheelFrictions);
+	int nMode = _AllModes["STEER"].CurrentMode;
+	
+	calculatedFrontAngle = RangedInterpolation3D(carSpeed, averageFriction, frontWheelSpeeds[nMode], frontWheelAngles[nMode], frontWheelFrictions[nMode]);
+	calculatedRearAngle = RangedInterpolation3D(carSpeed, averageFriction, rearWheelSpeeds[nMode], rearWheelAngles[nMode], rearWheelFrictions[nMode]);
 	
 	calculatedFrontAngle = (float)MathHelper.Clamp(calculatedFrontAngle, 0, 46);
 	calculatedRearAngle = (float)MathHelper.Clamp(calculatedRearAngle, 0, 46);
@@ -1280,7 +1306,7 @@ private string SuspensionScriptMessage()
     string returnMessage = "";
 
     returnMessage += (_AllModes["STEER"].FeatureState || _AllModes["SUS"].FeatureState || _AllModes["STRENGTH"].FeatureState) ? "\n" : "";
-    returnMessage += (_AllModes["STEER"].FeatureState) ? "STE: 0 " : "";
+    returnMessage += (_AllModes["STEER"].FeatureState) ? "STE: " + _AllModes["STEER"].CurrentMode + " " : "";
     returnMessage += (_AllModes["SUS"].FeatureState) ? "SUS: " + _AllModes["SUS"].CurrentMode + " " : "";
     returnMessage += (_AllModes["STRENGTH"].FeatureState) ? "STR: " + _AllModes["STRENGTH"].CurrentMode + " " : "";
 
